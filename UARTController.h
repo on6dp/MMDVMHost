@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2002-2004,2007-2009,2011-2013,2015-2017 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2002-2004,2007-2009,2011-2013,2015-2017,2020,2021 by Jonathan Naylor G4KLX
  *   Copyright (C) 1999-2001 by Thomas Sailor HB9JNX
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -17,9 +17,10 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef SerialController_H
-#define SerialController_H
+#ifndef UARTController_H
+#define UARTController_H
 
+#include "ModemPort.h"
 #include "SerialPort.h"
 
 #include <string>
@@ -28,22 +29,10 @@
 #include <windows.h>
 #endif
 
-enum SERIAL_SPEED {
-	SERIAL_1200   = 1200,
-	SERIAL_2400   = 2400,
-	SERIAL_4800   = 4800,
-	SERIAL_9600   = 9600,
-	SERIAL_19200  = 19200,
-	SERIAL_38400  = 38400,
-	SERIAL_76800  = 76800,
-	SERIAL_115200 = 115200,
-	SERIAL_230400 = 230400
-};
-
-class CSerialController : public ISerialPort {
+class CUARTController : public ISerialPort, public IModemPort {
 public:
-	CSerialController(const std::string& device, SERIAL_SPEED speed, bool assertRTS = false);
-	virtual ~CSerialController();
+	CUARTController(const std::string& device, unsigned int speed, bool assertRTS = false);
+	virtual ~CUARTController();
 
 	virtual bool open();
 
@@ -58,8 +47,10 @@ public:
 #endif
 
 protected:
+	CUARTController(unsigned int speed, bool assertRTS = false);
+
 	std::string    m_device;
-	SERIAL_SPEED   m_speed;
+	unsigned int   m_speed;
 	bool           m_assertRTS;
 #if defined(_WIN32) || defined(_WIN64)
 	HANDLE         m_handle;
@@ -71,6 +62,7 @@ protected:
 	int readNonblock(unsigned char* buffer, unsigned int length);
 #else
 	bool canWrite();
+	bool setRaw();
 #endif
 };
 

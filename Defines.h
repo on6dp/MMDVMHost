@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2018,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2018,2020,2021 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ const unsigned char MODE_YSF     = 3U;
 const unsigned char MODE_P25     = 4U;
 const unsigned char MODE_NXDN    = 5U;
 const unsigned char MODE_POCSAG  = 6U;
+const unsigned char MODE_M17     = 7U;
 
 const unsigned char MODE_FM      = 10U;
 
@@ -35,11 +36,12 @@ const unsigned char MODE_ERROR   = 100U;
 const unsigned char MODE_QUIT    = 110U;
 
 const unsigned char TAG_HEADER = 0x00U;
-const unsigned char TAG_DATA   = 0x01U;
-const unsigned char TAG_LOST   = 0x02U;
-const unsigned char TAG_EOT    = 0x03U;
+const unsigned char TAG_DATA1  = 0x01U;
+const unsigned char TAG_DATA2  = 0x02U;
+const unsigned char TAG_LOST   = 0x03U;
+const unsigned char TAG_EOT    = 0x04U;
 
-const unsigned int  MODEM_DATA_LEN = 220U;
+const unsigned int  DSTAR_MODEM_DATA_LEN = 220U;
 
 enum HW_TYPE {
 	HWT_MMDVM,

@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2011-2018,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2020,2021 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,20 +16,28 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "NullModem.h"
-#include "Log.h"
+#ifndef PseudoTTYController_H
+#define PseudoTTYController_H
 
-CNullModem::CNullModem(const std::string& port, bool duplex, bool rxInvert, bool txInvert, bool pttInvert, unsigned int txDelay, unsigned int dmrDelay, bool useCOSAsLockout, bool trace, bool debug) :
-CModem(port, duplex,rxInvert, txInvert,pttInvert,txDelay, dmrDelay, useCOSAsLockout, trace, debug),
-m_hwType(HWT_MMDVM)
-{
-}
+#if !defined(_WIN32) && !defined(_WIN64)
 
-CNullModem::~CNullModem()
-{
-}
+#include <cstring>
 
-bool CNullModem::open(){
-	::LogMessage("Opening the MMDVM Null Modem");
-	return true;
-}
+#include "UARTController.h"
+
+class CPseudoTTYController : public CUARTController {
+public:
+	CPseudoTTYController(const std::string& symlink, unsigned int speed, bool assertRTS = false);
+	virtual ~CPseudoTTYController();
+
+	virtual bool open();
+
+	virtual void close();
+
+protected:
+	std::string m_symlink;
+};
+
+#endif
+
+#endif

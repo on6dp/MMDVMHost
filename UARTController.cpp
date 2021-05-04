@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2002-2004,2007-2011,2013,2014-2017,2019 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2002-2004,2007-2011,2013,2014-2017,2019,2020,2021 by Jonathan Naylor G4KLX
  *   Copyright (C) 1999-2001 by Thomas Sailor HB9JNX
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -17,18 +17,17 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "SerialController.h"
+#include "UARTController.h"
 #include "Log.h"
 
 #include <cstring>
 #include <cassert>
 
-#include <sys/types.h>
-
 #if defined(_WIN32) || defined(_WIN64)
 #include <setupapi.h>
 #include <winioctl.h>
 #else
+#include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <cerrno>
@@ -40,7 +39,7 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 
-CSerialController::CSerialController(const std::string& device, SERIAL_SPEED speed, bool assertRTS) :
+CUARTController::CUARTController(const std::string& device, unsigned int speed, bool assertRTS) :
 m_device(device),
 m_speed(speed),
 m_assertRTS(assertRTS),
@@ -49,11 +48,19 @@ m_handle(INVALID_HANDLE_VALUE)
 	assert(!device.empty());
 }
 
-CSerialController::~CSerialController()
+CUARTController::CUARTController(unsigned int speed, bool assertRTS) :
+m_device(),
+m_speed(speed),
+m_assertRTS(assertRTS),
+m_handle(INVALID_HANDLE_VALUE)
 {
 }
 
-bool CSerialController::open()
+CUARTController::~CUARTController()
+{
+}
+
+bool CUARTController::open()
 {
 	assert(m_handle == INVALID_HANDLE_VALUE);
 
@@ -133,7 +140,7 @@ bool CSerialController::open()
 	return true;
 }
 
-int CSerialController::read(unsigned char* buffer, unsigned int length)
+int CUARTController::read(unsigned char* buffer, unsigned int length)
 {
 	assert(m_handle != INVALID_HANDLE_VALUE);
 	assert(buffer != NULL);
@@ -155,7 +162,7 @@ int CSerialController::read(unsigned char* buffer, unsigned int length)
 	return int(length);
 }
 
-int CSerialController::readNonblock(unsigned char* buffer, unsigned int length)
+int CUARTController::readNonblock(unsigned char* buffer, unsigned int length)
 {
 	assert(m_handle != INVALID_HANDLE_VALUE);
 	assert(buffer != NULL);
@@ -187,7 +194,7 @@ int CSerialController::readNonblock(unsigned char* buffer, unsigned int length)
 	return int(bytes);
 }
 
-int CSerialController::write(const unsigned char* buffer, unsigned int length)
+int CUARTController::write(const unsigned char* buffer, unsigned int length)
 {
 	assert(m_handle != INVALID_HANDLE_VALUE);
 	assert(buffer != NULL);
@@ -211,7 +218,7 @@ int CSerialController::write(const unsigned char* buffer, unsigned int length)
 	return int(length);
 }
 
-void CSerialController::close()
+void CUARTController::close()
 {
 	assert(m_handle != INVALID_HANDLE_VALUE);
 
@@ -221,7 +228,7 @@ void CSerialController::close()
 
 #else
 
-CSerialController::CSerialController(const std::string& device, SERIAL_SPEED speed, bool assertRTS) :
+CUARTController::CUARTController(const std::string& device, unsigned int speed, bool assertRTS) :
 m_device(device),
 m_speed(speed),
 m_assertRTS(assertRTS),
@@ -230,11 +237,19 @@ m_fd(-1)
 	assert(!device.empty());
 }
 
-CSerialController::~CSerialController()
+CUARTController::CUARTController(unsigned int speed, bool assertRTS) :
+m_device(),
+m_speed(speed),
+m_assertRTS(assertRTS),
+m_fd(-1)
 {
 }
 
-bool CSerialController::open()
+CUARTController::~CUARTController()
+{
+}
+
+bool CUARTController::open()
 {
 	assert(m_fd == -1);
 
@@ -248,102 +263,112 @@ bool CSerialController::open()
 		return false;
 	}
 
-	if (::isatty(m_fd)) {
-		termios termios;
-		if (::tcgetattr(m_fd, &termios) < 0) {
-			LogError("Cannot get the attributes for %s", m_device.c_str());
-			::close(m_fd);
-			return false;
-		}
+	if (::isatty(m_fd))
+		return setRaw();
+		
+	return true;
+}
 
-		termios.c_iflag &= ~(IGNBRK | BRKINT | IGNPAR | PARMRK | INPCK);
-		termios.c_iflag &= ~(ISTRIP | INLCR | IGNCR | ICRNL);
-		termios.c_iflag &= ~(IXON | IXOFF | IXANY);
-		termios.c_oflag &= ~(OPOST);
-		termios.c_cflag &= ~(CSIZE | CSTOPB | PARENB | CRTSCTS);
-		termios.c_cflag |=  (CS8 | CLOCAL | CREAD);
-		termios.c_lflag &= ~(ISIG | ICANON | IEXTEN);
-		termios.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
-#if defined(__APPLE__)
-		termios.c_cc[VMIN] = 1;
-		termios.c_cc[VTIME] = 1;
-#else
-		termios.c_cc[VMIN]  = 0;
-		termios.c_cc[VTIME] = 10;
-#endif
-
-		switch (m_speed) {
-			case SERIAL_1200:
-				::cfsetospeed(&termios, B1200);
-				::cfsetispeed(&termios, B1200);
-				break;
-			case SERIAL_2400:
-				::cfsetospeed(&termios, B2400);
-				::cfsetispeed(&termios, B2400);
-				break;
-			case SERIAL_4800:
-				::cfsetospeed(&termios, B4800);
-				::cfsetispeed(&termios, B4800);
-				break;
-			case SERIAL_9600:
-				::cfsetospeed(&termios, B9600);
-				::cfsetispeed(&termios, B9600);
-				break;
-			case SERIAL_19200:
-				::cfsetospeed(&termios, B19200);
-				::cfsetispeed(&termios, B19200);
-				break;
-			case SERIAL_38400:
-				::cfsetospeed(&termios, B38400);
-				::cfsetispeed(&termios, B38400);
-				break;
-			case SERIAL_115200:
-				::cfsetospeed(&termios, B115200);
-				::cfsetispeed(&termios, B115200);
-				break;
-			case SERIAL_230400:
-				::cfsetospeed(&termios, B230400);
-				::cfsetispeed(&termios, B230400);
-				break;
-			default:
-				LogError("Unsupported serial port speed - %d", int(m_speed));
-				::close(m_fd);
-				return false;
-		}
-
-		if (::tcsetattr(m_fd, TCSANOW, &termios) < 0) {
-			LogError("Cannot set the attributes for %s", m_device.c_str());
-			::close(m_fd);
-			return false;
-		}
-
-		if (m_assertRTS) {
-			unsigned int y;
-			if (::ioctl(m_fd, TIOCMGET, &y) < 0) {
-				LogError("Cannot get the control attributes for %s", m_device.c_str());
-				::close(m_fd);
-				return false;
-			}
-
-			y |= TIOCM_RTS;
-
-			if (::ioctl(m_fd, TIOCMSET, &y) < 0) {
-				LogError("Cannot set the control attributes for %s", m_device.c_str());
-				::close(m_fd);
-				return false;
-			}
-		}
-
-#if defined(__APPLE__)
-		setNonblock(false);
-#endif
+bool CUARTController::setRaw()
+{
+	termios termios;
+	if (::tcgetattr(m_fd, &termios) < 0) {
+		LogError("Cannot get the attributes for %s", m_device.c_str());
+		::close(m_fd);
+		return false;
 	}
+
+	termios.c_iflag &= ~(IGNBRK | BRKINT | IGNPAR | PARMRK | INPCK);
+	termios.c_iflag &= ~(ISTRIP | INLCR | IGNCR | ICRNL);
+	termios.c_iflag &= ~(IXON | IXOFF | IXANY);
+	termios.c_oflag &= ~(OPOST);
+	termios.c_cflag &= ~(CSIZE | CSTOPB | PARENB | CRTSCTS);
+	termios.c_cflag |=  (CS8 | CLOCAL | CREAD);
+	termios.c_lflag &= ~(ISIG | ICANON | IEXTEN);
+	termios.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
+#if defined(__APPLE__)
+	termios.c_cc[VMIN] = 1;
+	termios.c_cc[VTIME] = 1;
+#else
+	termios.c_cc[VMIN]  = 0;
+	termios.c_cc[VTIME] = 10;
+#endif
+
+	switch (m_speed) {
+		case 1200U:
+			::cfsetospeed(&termios, B1200);
+			::cfsetispeed(&termios, B1200);
+			break;
+		case 2400U:
+			::cfsetospeed(&termios, B2400);
+			::cfsetispeed(&termios, B2400);
+			break;
+		case 4800U:
+			::cfsetospeed(&termios, B4800);
+			::cfsetispeed(&termios, B4800);
+			break;
+		case 9600U:
+			::cfsetospeed(&termios, B9600);
+			::cfsetispeed(&termios, B9600);
+			break;
+		case 19200U:
+			::cfsetospeed(&termios, B19200);
+			::cfsetispeed(&termios, B19200);
+			break;
+		case 38400U:
+			::cfsetospeed(&termios, B38400);
+			::cfsetispeed(&termios, B38400);
+			break;
+		case 115200U:
+			::cfsetospeed(&termios, B115200);
+			::cfsetispeed(&termios, B115200);
+			break;
+		case 230400U:
+			::cfsetospeed(&termios, B230400);
+			::cfsetispeed(&termios, B230400);
+			break;
+		case 460800U:
+			::cfsetospeed(&termios, B460800);
+			::cfsetispeed(&termios, B460800);
+			break;
+		default:
+			LogError("Unsupported serial port speed - %u", m_speed);
+			::close(m_fd);
+			return false;
+	}
+
+	if (::tcsetattr(m_fd, TCSANOW, &termios) < 0) {
+		LogError("Cannot set the attributes for %s", m_device.c_str());
+		::close(m_fd);
+		return false;
+	}
+
+	if (m_assertRTS) {
+		unsigned int y;
+		if (::ioctl(m_fd, TIOCMGET, &y) < 0) {
+			LogError("Cannot get the control attributes for %s", m_device.c_str());
+			::close(m_fd);
+			return false;
+		}
+
+		y |= TIOCM_RTS;
+
+		if (::ioctl(m_fd, TIOCMSET, &y) < 0) {
+			LogError("Cannot set the control attributes for %s", m_device.c_str());
+			::close(m_fd);
+			return false;
+		}
+	}
+
+#if defined(__APPLE__)
+	setNonblock(false);
+#endif
 
 	return true;
 }
 
 #if defined(__APPLE__)
-int CSerialController::setNonblock(bool nonblock)
+int CUARTController::setNonblock(bool nonblock)
 {
 	int flag = ::fcntl(m_fd, F_GETFD, 0);
 
@@ -356,7 +381,7 @@ int CSerialController::setNonblock(bool nonblock)
 }
 #endif
 
-int CSerialController::read(unsigned char* buffer, unsigned int length)
+int CUARTController::read(unsigned char* buffer, unsigned int length)
 {
 	assert(buffer != NULL);
 	assert(m_fd != -1);
@@ -404,7 +429,7 @@ int CSerialController::read(unsigned char* buffer, unsigned int length)
 	return length;
 }
 
-bool CSerialController::canWrite(){
+bool CUARTController::canWrite(){
 #if defined(__APPLE__)
 	fd_set wset;
 	FD_ZERO(&wset);
@@ -424,7 +449,7 @@ bool CSerialController::canWrite(){
 #endif
 }
 
-int CSerialController::write(const unsigned char* buffer, unsigned int length)
+int CUARTController::write(const unsigned char* buffer, unsigned int length)
 {
 	assert(buffer != NULL);
 	assert(m_fd != -1);
@@ -451,7 +476,7 @@ int CSerialController::write(const unsigned char* buffer, unsigned int length)
 	return length;
 }
 
-void CSerialController::close()
+void CUARTController::close()
 {
 	assert(m_fd != -1);
 

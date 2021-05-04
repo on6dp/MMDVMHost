@@ -1,5 +1,5 @@
 /*
-*   Copyright (C) 2016 by Jonathan Naylor G4KLX
+*   Copyright (C) 2021 by Jonathan Naylor G4KLX
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -16,48 +16,32 @@
 *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#if !defined(UMP_H)
-#define	UMP_H
+#ifndef NullController_H
+#define NullController_H
 
-#include "SerialController.h"
-#include "SerialPort.h"
+#include "ModemPort.h"
 
-#include <string>
+#include "RingBuffer.h"
 
-class CUMP : public ISerialPort
-{
+class CNullController : public IModemPort {
 public:
-	CUMP(const std::string& port);
-	virtual ~CUMP();
+	CNullController();
+	virtual ~CNullController();
 
 	virtual bool open();
-
-	bool setMode(unsigned char mode);
-
-	bool setTX(bool on);
-
-	bool setCD(bool on);
-
-	bool getLockout() const;
 
 	virtual int read(unsigned char* buffer, unsigned int length);
 
 	virtual int write(const unsigned char* buffer, unsigned int length);
 
-	void clock(unsigned int ms);
-
 	virtual void close();
 
 private:
-	CSerialController m_serial;
-	bool              m_open;
-	unsigned char*    m_buffer;
-	unsigned int      m_length;
-	unsigned int      m_offset;
-	bool              m_lockout;
-	unsigned char     m_mode;
-	bool              m_tx;
-	bool              m_cd;
+	CRingBuffer<unsigned char> m_buffer;
+
+	void writeVersion();
+	void writeStatus();
+	void writeAck(unsigned char type);
 };
 
 #endif
