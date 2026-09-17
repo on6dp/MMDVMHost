@@ -1,5 +1,5 @@
 /*
-*   Copyright (C) 2016 by Jonathan Naylor G4KLX
+*   Copyright (C) 2016,2023,2025 by Jonathan Naylor G4KLX
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -20,19 +20,28 @@
 #define	DStarSlowData_H
 
 #include "DStarHeader.h"
+#include "Defines.h"
+
+#if defined(USE_DSTAR)
 
 class CDStarSlowData {
 public:
 	CDStarSlowData();
 	~CDStarSlowData();
 
-	CDStarHeader* add(const unsigned char* data);
+	void add(const unsigned char* data);
+
+	CDStarHeader*        getHeader();
+	const unsigned char* getText();
+	unsigned char        getType(bool unmasked = false) const;
+
+	bool isComplete() const;
 
 	void start();
 	void reset();
 
 	void setText(const char* text);
-	void get(unsigned char* data);
+	void getSlowData(unsigned char* data);
 
 private:
 	unsigned char* m_header;
@@ -40,13 +49,21 @@ private:
 	unsigned char* m_buffer;
 	unsigned char* m_text;
 	unsigned int   m_textPtr;
-	
-	enum SDD_STATE {
-		SDD_FIRST,
-		SDD_SECOND
+	unsigned char  m_textBits;
+
+	enum class SDD_STATE {
+		FIRST,
+		SECOND
 	};
 
 	SDD_STATE      m_state;
+	bool           m_complete;
+
+	void loadHeader();
+	void loadText();
 };
 
 #endif
+
+#endif
+

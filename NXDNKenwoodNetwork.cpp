@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2014,2016,2018,2020 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2014,2016,2018,2020,2023,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 #include "NXDNCRC.h"
 #include "Utils.h"
 #include "Log.h"
+
+#if defined(USE_NXDN)
 
 #include <cstdio>
 #include <cassert>
@@ -46,7 +48,7 @@ m_seen1(false),
 m_seen2(false),
 m_seen3(false),
 m_seen4(false),
-m_sacch(NULL),
+m_sacch(nullptr),
 m_sessionId(1U),
 m_seqNo(0U),
 m_ssrc(0U),
@@ -107,18 +109,18 @@ bool CNXDNKenwoodNetwork::open()
 
 bool CNXDNKenwoodNetwork::write(const unsigned char* data, NXDN_NETWORK_MESSAGE_TYPE type)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	switch (type) {
-	case NNMT_VOICE_HEADER:	// Voice header or trailer
-	case NNMT_VOICE_TRAILER:
+	case NXDN_NETWORK_MESSAGE_TYPE::VOICE_HEADER:	// Voice header or trailer
+	case NXDN_NETWORK_MESSAGE_TYPE::VOICE_TRAILER:
 		return processIcomVoiceHeader(data);
-	case NNMT_VOICE_BODY:	// Voice data
+	case NXDN_NETWORK_MESSAGE_TYPE::VOICE_BODY:	// Voice data
 		return processIcomVoiceData(data);
-	case NNMT_DATA_HEADER:	// Data header or trailer
-	case NNMT_DATA_TRAILER:
+	case NXDN_NETWORK_MESSAGE_TYPE::DATA_HEADER:	// Data header or trailer
+	case NXDN_NETWORK_MESSAGE_TYPE::DATA_TRAILER:
 		return processIcomDataHeader(data);
-	case NNMT_DATA_BODY:	// Data data
+	case NXDN_NETWORK_MESSAGE_TYPE::DATA_BODY:	// Data data
 		return processIcomDataData(data);
 	default:
 		return false;
@@ -127,7 +129,7 @@ bool CNXDNKenwoodNetwork::write(const unsigned char* data, NXDN_NETWORK_MESSAGE_
 
 bool CNXDNKenwoodNetwork::processIcomVoiceHeader(const unsigned char* inData)
 {
-	assert(inData != NULL);
+	assert(inData != nullptr);
 
 	unsigned char outData[30U];
 	::memset(outData, 0x00U, 30U);
@@ -171,7 +173,7 @@ bool CNXDNKenwoodNetwork::processIcomVoiceHeader(const unsigned char* inData)
 
 bool CNXDNKenwoodNetwork::processIcomVoiceData(const unsigned char* inData)
 {
-	assert(inData != NULL);
+	assert(inData != nullptr);
 
 	unsigned char outData[40U], temp[10U];
 	::memset(outData, 0x00U, 40U);
@@ -251,7 +253,7 @@ bool CNXDNKenwoodNetwork::processIcomVoiceData(const unsigned char* inData)
 
 bool CNXDNKenwoodNetwork::processIcomDataHeader(const unsigned char* inData)
 {
-	assert(inData != NULL);
+	assert(inData != nullptr);
 
 	unsigned char outData[30U];
 	::memset(outData, 0x00U, 30U);
@@ -295,7 +297,7 @@ bool CNXDNKenwoodNetwork::processIcomDataHeader(const unsigned char* inData)
 
 bool CNXDNKenwoodNetwork::processIcomDataData(const unsigned char* inData)
 {
-	assert(inData != NULL);
+	assert(inData != nullptr);
 
 	unsigned char outData[40U];
 	::memset(outData, 0x00U, 40U);
@@ -328,7 +330,7 @@ bool CNXDNKenwoodNetwork::processIcomDataData(const unsigned char* inData)
 
 bool CNXDNKenwoodNetwork::writeRTPVoiceHeader(const unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char buffer[50U];
 	::memset(buffer, 0x00U, 50U);
@@ -375,7 +377,7 @@ bool CNXDNKenwoodNetwork::writeRTPVoiceHeader(const unsigned char* data)
 
 bool CNXDNKenwoodNetwork::writeRTPVoiceTrailer(const unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char buffer[50U];
 	::memset(buffer, 0x00U, 50U);
@@ -421,7 +423,7 @@ bool CNXDNKenwoodNetwork::writeRTPVoiceTrailer(const unsigned char* data)
 
 bool CNXDNKenwoodNetwork::writeRTPVoiceData(const unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char buffer[60U];
 	::memset(buffer, 0x00U, 60U);
@@ -467,7 +469,7 @@ bool CNXDNKenwoodNetwork::writeRTPVoiceData(const unsigned char* data)
 
 bool CNXDNKenwoodNetwork::writeRTPDataHeader(const unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char buffer[50U];
 	::memset(buffer, 0x00U, 50U);
@@ -509,7 +511,7 @@ bool CNXDNKenwoodNetwork::writeRTPDataHeader(const unsigned char* data)
 
 bool CNXDNKenwoodNetwork::writeRTPDataTrailer(const unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char buffer[50U];
 	::memset(buffer, 0x00U, 50U);
@@ -551,7 +553,7 @@ bool CNXDNKenwoodNetwork::writeRTPDataTrailer(const unsigned char* data)
 
 bool CNXDNKenwoodNetwork::writeRTPDataData(const unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char buffer[50U];
 	::memset(buffer, 0x00U, 50U);
@@ -605,7 +607,7 @@ bool CNXDNKenwoodNetwork::writeRTCPStart()
 	m_startUSecs = st.wMilliseconds * 1000U;
 #else
 	struct timeval tod;
-	::gettimeofday(&tod, NULL);
+	::gettimeofday(&tod, nullptr);
 
 	m_startSecs  = tod.tv_sec;
 	m_startUSecs = tod.tv_usec;
@@ -738,7 +740,7 @@ bool CNXDNKenwoodNetwork::writeRTCPHang()
 
 bool CNXDNKenwoodNetwork::read(unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char dummy[BUFFER_LENGTH];
 	readRTCP(dummy);
@@ -764,7 +766,7 @@ bool CNXDNKenwoodNetwork::read(unsigned char* data)
 
 unsigned int CNXDNKenwoodNetwork::readRTP(unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char buffer[BUFFER_LENGTH];
 
@@ -774,7 +776,7 @@ unsigned int CNXDNKenwoodNetwork::readRTP(unsigned char* data)
 	if (length <= 0)
 		return 0U;
 
-	if (!CUDPSocket::match(m_rtpAddr, address, IMT_ADDRESS_ONLY)) {
+	if (!CUDPSocket::match(m_rtpAddr, address, IPMATCHTYPE::ADDRESS_ONLY)) {
 		LogMessage("NXDN, RTP packet received from an invalid source");
 		return 0U;
 	}
@@ -792,7 +794,7 @@ unsigned int CNXDNKenwoodNetwork::readRTP(unsigned char* data)
 
 unsigned int CNXDNKenwoodNetwork::readRTCP(unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char buffer[BUFFER_LENGTH];
 
@@ -802,7 +804,7 @@ unsigned int CNXDNKenwoodNetwork::readRTCP(unsigned char* data)
 	if (length <= 0)
 		return 0U;
 
-	if (!CUDPSocket::match(m_rtpAddr, address, IMT_ADDRESS_ONLY)) {
+	if (!CUDPSocket::match(m_rtpAddr, address, IPMATCHTYPE::ADDRESS_ONLY)) {
 		LogMessage("NXDN, RTCP packet received from an invalid source");
 		return 0U;
 	}
@@ -868,7 +870,7 @@ void CNXDNKenwoodNetwork::clock(unsigned int ms)
 
 bool CNXDNKenwoodNetwork::processKenwoodVoiceHeader(unsigned char* inData)
 {
-	assert(inData != NULL);
+	assert(inData != nullptr);
 
 	unsigned char outData[50U], temp[20U];
 	::memset(outData, 0x00U, 50U);
@@ -925,7 +927,7 @@ bool CNXDNKenwoodNetwork::processKenwoodVoiceHeader(unsigned char* inData)
 
 bool CNXDNKenwoodNetwork::processKenwoodVoiceData(unsigned char* inData)
 {
-	assert(inData != NULL);
+	assert(inData != nullptr);
 
 	unsigned char outData[50U], temp[20U];
 	::memset(outData, 0x00U, 50U);
@@ -1088,7 +1090,7 @@ unsigned long CNXDNKenwoodNetwork::getTimeStamp() const
 	timeStamp += ms * 80U;
 #else
 	struct timeval tod;
-	::gettimeofday(&tod, NULL);
+	::gettimeofday(&tod, nullptr);
 
 	unsigned int ss = tod.tv_sec;
 	unsigned int ms = tod.tv_usec / 1000U;
@@ -1102,7 +1104,7 @@ unsigned long CNXDNKenwoodNetwork::getTimeStamp() const
 
 bool CNXDNKenwoodNetwork::processKenwoodVoiceLateEntry(unsigned char* inData)
 {
-	assert(inData != NULL);
+	assert(inData != nullptr);
 
 	unsigned char sacch[4U];
 	sacch[0U] = inData[12U];
@@ -1185,3 +1187,6 @@ void CNXDNKenwoodNetwork::enable(bool enabled)
 
 	m_enabled = enabled;
 }
+
+#endif
+

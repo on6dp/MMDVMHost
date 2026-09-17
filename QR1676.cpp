@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2023,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
 
 #include "QR1676.h"
 #include "Log.h"
+
+#if defined(USE_DMR)
 
 #include <cstdio>
 #include <cassert>
@@ -92,7 +94,7 @@ unsigned int CQR1676::getSyndrome1576(unsigned int pattern)
 // Compute the EMB against a precomputed list of correct words
 void CQR1676::encode(unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned int value = (data[0U] >> 1) & 0x7FU;
 	unsigned int cksum = ENCODING_TABLE_1676[value];
@@ -103,7 +105,7 @@ void CQR1676::encode(unsigned char* data)
 
 unsigned char CQR1676::decode(const unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned int code = (data[0U] << 7) + (data[1U] >> 1);
 	unsigned int syndrome = getSyndrome1576(code);
@@ -113,3 +115,6 @@ unsigned char CQR1676::decode(const unsigned char* data)
 
 	return code >> 7;
 }
+
+#endif
+

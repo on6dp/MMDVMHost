@@ -1,9 +1,10 @@
 Debug
 Release
 x64
-MMDVMHost
-RemoteCommand
+MMDVM-Host
+Images
 *.o
+*.d
 *.opendb
 *.bak
 *.obj
@@ -15,5 +16,6 @@ RemoteCommand
 *.user
 *.VC.db
 .vs
+.vscode
 *.ambe
 GitVersion.h

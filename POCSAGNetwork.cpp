@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2018,2019,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2018,2019,2020,2021,2023,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,9 +18,10 @@
 
 #include "POCSAGDefines.h"
 #include "POCSAGNetwork.h"
-#include "Defines.h"
 #include "Utils.h"
 #include "Log.h"
+
+#if defined(USE_POCSAG)
 
 #include <cstdio>
 #include <cassert>
@@ -53,7 +54,7 @@ bool CPOCSAGNetwork::open()
 
 	LogMessage("Opening POCSAG network connection");
 
-	return m_socket.open();
+	return m_socket.open(m_addr);
 }
 
 void CPOCSAGNetwork::clock(unsigned int ms)
@@ -88,7 +89,7 @@ void CPOCSAGNetwork::clock(unsigned int ms)
 
 unsigned int CPOCSAGNetwork::read(unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	if (m_buffer.isEmpty())
 		return 0U;
@@ -124,3 +125,6 @@ void CPOCSAGNetwork::enable(bool enabled)
 	
 	m_enabled = enabled;
 }
+
+#endif
+

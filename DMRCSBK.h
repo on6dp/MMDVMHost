@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2020,2021,2022,2023,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -20,17 +20,29 @@
 #define DMRCSBK_H
 
 #include "DMRDefines.h"
+#include "Defines.h"
 
-enum CSBKO {
-	CSBKO_NONE           = 0x00,
-	CSBKO_UUVREQ         = 0x04,
-	CSBKO_UUANSRSP       = 0x05,
-	CSBKO_CTCSBK         = 0x07,
-	CSBKO_CALL_ALERT     = 0x1F,
-	CSBKO_CALL_ALERT_ACK = 0x20,
-	CSBKO_NACKRSP        = 0x26,
-	CSBKO_BSDWNACT       = 0x38,
-	CSBKO_PRECCSBK       = 0x3D
+#if defined(USE_DMR)
+
+enum class CSBKO : unsigned char {
+	NONE           = 0x00U,
+	UUVREQ         = 0x04U,
+	UUANSRSP       = 0x05U,
+	CTCSBK         = 0x07U,
+	CALL_ALERT     = 0x1FU,
+	CALL_ALERT_ACK = 0x20U,
+	RADIO_CHECK    = 0x24U,
+	NACKRSP        = 0x26U,
+	CALL_EMERGENCY = 0x27U,
+	BSDWNACT       = 0x38U,
+	PRECCSBK       = 0x3DU,
+	MAINT          = 0x2AU,
+	TV_GRANT       = 0x31U,
+	PV_GRANT       = 0x30U,
+	AHOY           = 0x1CU,
+	ACKU           = 0x21U,
+	P_CLEAR        = 0x2EU,
+	C_BCAST        = 0x28U
 };
 
 class CDMRCSBK
@@ -42,6 +54,7 @@ public:
 	bool put(const unsigned char* bytes);
 
 	void get(unsigned char* bytes) const;
+	void setCSBKData(unsigned char* bytes);
 
 	// Generic fields
 	CSBKO         getCSBKO() const;
@@ -50,7 +63,6 @@ public:
 	// Set/Get the OVCM bit in the supported CSBKs
 	bool getOVCM() const;
 	void setOVCM(bool ovcm);
-	void clearOVCM();
 
 	// For BS Dwn Act
 	unsigned int  getBSId() const;
@@ -65,6 +77,9 @@ public:
 	unsigned char getCBF() const;
 
 	void          setCBF(unsigned char cbf);
+	void          setDataType(unsigned char dataType);
+
+	unsigned char getDataType() const;
 
 private:
 	unsigned char* m_data;
@@ -76,6 +91,11 @@ private:
 	unsigned int   m_dstId;
 	bool           m_dataContent;
 	unsigned char  m_CBF;
+	bool           m_OVCM;
+	unsigned char  m_dataType;
 };
 
 #endif
+
+#endif
+

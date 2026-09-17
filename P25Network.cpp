@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2014,2016,2019,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2014,2016,2019,2020,2021,2023,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,9 +18,10 @@
 
 #include "P25Network.h"
 #include "P25Defines.h"
-#include "Defines.h"
 #include "Utils.h"
 #include "Log.h"
+
+#if defined(USE_P25)
 
 #include <cstdio>
 #include <cassert>
@@ -118,7 +119,7 @@ bool CP25Network::open()
 
 bool CP25Network::writeLDU1(const unsigned char* ldu1, const CP25Data& control, const CP25LowSpeedData& lsd, bool end)
 {
-	assert(ldu1 != NULL);
+	assert(ldu1 != nullptr);
 
 	unsigned char buffer[22U];
 
@@ -247,7 +248,7 @@ bool CP25Network::writeLDU1(const unsigned char* ldu1, const CP25Data& control, 
 
 bool CP25Network::writeLDU2(const unsigned char* ldu2, const CP25Data& control, const CP25LowSpeedData& lsd, bool end)
 {
-	assert(ldu2 != NULL);
+	assert(ldu2 != nullptr);
 
 	unsigned char buffer[22U];
 
@@ -409,7 +410,7 @@ void CP25Network::clock(unsigned int ms)
 
 unsigned int CP25Network::read(unsigned char* data, unsigned int length)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	if (m_buffer.isEmpty())
 		return 0U;
@@ -443,3 +444,6 @@ void CP25Network::enable(bool enabled)
 
 	m_enabled = enabled;
 }
+
+#endif
+

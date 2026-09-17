@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2018,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2018,2020,2021,2023,2025,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -19,6 +19,15 @@
 #if !defined(Defines_H)
 #define	Defines_H
 
+// Define the wanted modes to compile into the host here
+#define	USE_DSTAR
+#define	USE_DMR
+#define	USE_YSF
+#define	USE_P25
+#define	USE_NXDN
+#define	USE_POCSAG
+#define	USE_FM
+
 const unsigned char MODE_IDLE    = 0U;
 const unsigned char MODE_DSTAR   = 1U;
 const unsigned char MODE_DMR     = 2U;
@@ -26,7 +35,6 @@ const unsigned char MODE_YSF     = 3U;
 const unsigned char MODE_P25     = 4U;
 const unsigned char MODE_NXDN    = 5U;
 const unsigned char MODE_POCSAG  = 6U;
-const unsigned char MODE_M17     = 7U;
 
 const unsigned char MODE_FM      = 10U;
 
@@ -36,55 +44,48 @@ const unsigned char MODE_ERROR   = 100U;
 const unsigned char MODE_QUIT    = 110U;
 
 const unsigned char TAG_HEADER = 0x00U;
-const unsigned char TAG_DATA1  = 0x01U;
-const unsigned char TAG_DATA2  = 0x02U;
-const unsigned char TAG_LOST   = 0x03U;
-const unsigned char TAG_EOT    = 0x04U;
+const unsigned char TAG_DATA   = 0x01U;
+const unsigned char TAG_LOST   = 0x02U;
+const unsigned char TAG_EOT    = 0x03U;
+const unsigned char TAG_RSSI   = 0x04U;
 
 const unsigned int  DSTAR_MODEM_DATA_LEN = 220U;
 
-enum HW_TYPE {
-	HWT_MMDVM,
-	HWT_DVMEGA,
-	HWT_MMDVM_ZUMSPOT,
-	HWT_MMDVM_HS_HAT,
-	HWT_MMDVM_HS_DUAL_HAT,
-	HWT_NANO_HOTSPOT,
-	HWT_NANO_DV,
-	HWT_D2RG_MMDVM_HS,
-	HWT_MMDVM_HS,
-	HWT_OPENGD77_HS,
-	HWT_SKYBRIDGE,
-	HWT_UNKNOWN
+enum class RPT_RF_STATE {
+	LISTENING,
+	LATE_ENTRY,
+	AUDIO,
+	DATA_AUDIO,
+	DATA,
+	REJECTED,
+	INVALID
 };
 
-enum RPT_RF_STATE {
-	RS_RF_LISTENING,
-	RS_RF_LATE_ENTRY,
-	RS_RF_AUDIO,
-	RS_RF_DATA,
-	RS_RF_REJECTED,
-	RS_RF_INVALID
+enum class RPT_NET_STATE {
+	IDLE,
+	AUDIO,
+	DATA_AUDIO,
+	DATA
 };
 
-enum RPT_NET_STATE {
-	RS_NET_IDLE,
-	RS_NET_AUDIO,
-	RS_NET_DATA
+enum class DMR_BEACONS {
+	OFF,
+	NETWORK,
+	TIMED
 };
 
-enum DMR_BEACONS {
-	DMR_BEACONS_OFF,
-	DMR_BEACONS_NETWORK,
-	DMR_BEACONS_TIMED
+enum class DMR_OVCM {
+	OFF,
+	RX_ON,
+	TX_ON,
+	ON,
+	FORCE_OFF
 };
 
-enum DMR_OVCM_TYPES {
-	DMR_OVCM_OFF,
-	DMR_OVCM_RX_ON,
-	DMR_OVCM_TX_ON,
-	DMR_OVCM_ON,
-	DMR_OVCM_FORCE_OFF
+enum class DSTAR_ACK {
+	BER,
+	RSSI,
+	SMETER
 };
 
 #endif

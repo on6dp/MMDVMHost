@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015-2019 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015-2019,2023,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -27,17 +27,20 @@
 #include "RingBuffer.h"
 #include "StopWatch.h"
 #include "AMBEFEC.h"
-#include "Display.h"
 #include "Defines.h"
 #include "Timer.h"
 #include "Modem.h"
 
+#if defined(USE_DSTAR)
+
 #include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 class CDStarControl {
 public:
-	CDStarControl(const std::string& callsign, const std::string& module, bool selfOnly, bool ackReply, unsigned int ackTime, bool ackMessage, bool errorReply, const std::vector<std::string>& blackList, const std::vector<std::string>& whiteList, CDStarNetwork* network, CDisplay* display, unsigned int timeout, bool duplex, bool remoteGateway, CRSSIInterpolator* rssiMapper);
+	CDStarControl(const std::string& callsign, const std::string& module, bool selfOnly, bool ackReply, unsigned int ackTime, DSTAR_ACK ackMessage, bool errorReply, const std::vector<std::string>& blackList, const std::vector<std::string>& whiteList, CDStarNetwork* network, unsigned int timeout, bool duplex, bool remoteGateway, CRSSIInterpolator* rssiMapper);
 	~CDStarControl();
 
 	bool writeModem(unsigned char* data, unsigned int len);
@@ -55,13 +58,12 @@ private:
 	unsigned char*             m_gateway;
 	bool                       m_selfOnly;
 	bool                       m_ackReply;
-	bool                       m_ackMessage;
+	DSTAR_ACK                  m_ackMessage;
 	bool                       m_errorReply;
 	bool                       m_remoteGateway;
 	std::vector<std::string>   m_blackList;
 	std::vector<std::string>   m_whiteList;
 	CDStarNetwork*             m_network;
-	CDisplay*                  m_display;
 	bool                       m_duplex;
 	CRingBuffer<unsigned char> m_queue;
 	CDStarHeader               m_rfHeader;
@@ -69,7 +71,8 @@ private:
 	RPT_RF_STATE               m_rfState;
 	RPT_NET_STATE              m_netState;
 	bool                       m_net;
-	CDStarSlowData             m_slowData;
+	CDStarSlowData             m_rfSlowData;
+	CDStarSlowData             m_netSlowData;
 	unsigned char              m_rfN;
 	unsigned char              m_netN;
 	CTimer                     m_networkWatchdog;
@@ -87,41 +90,28 @@ private:
 	unsigned int               m_rfBits;
 	unsigned int               m_netBits;
 	unsigned int               m_rfErrs;
-	unsigned int               m_netErrs;
 	unsigned char*             m_lastFrame;
 	bool                       m_lastFrameValid;
 	CRSSIInterpolator*         m_rssiMapper;
-	unsigned char              m_rssi;
-	unsigned char              m_maxRSSI;
-	unsigned char              m_minRSSI;
-	unsigned int               m_aveRSSI;
+	int                        m_rssi;
+	int                        m_maxRSSI;
+	int                        m_minRSSI;
+	int                        m_aveRSSI;
+	unsigned int               m_rssiCountTotal;
+	int                        m_rssiAccum;
 	unsigned int               m_rssiCount;
+	unsigned int               m_bitErrsAccum;
+	unsigned int               m_bitsCount;
 	bool                       m_enabled;
-	FILE*                      m_fp;
-	unsigned char*             m_rfVoiceSyncData;
-	unsigned int               m_rfVoiceSyncDataLen;
-	unsigned char*             m_netVoiceSyncData;
-	unsigned int               m_netVoiceSyncDataLen;
-	bool                       m_rfNextFrameIsFastData;
-	bool                       m_netNextFrameIsFastData;
-	unsigned int               m_rfSkipDTMFBlankingFrames;
-	unsigned int               m_netSkipDTMFBlankingFrames;
-
-
-	unsigned int maybeFixupVoiceFrame(
-		unsigned char*  data,
-		unsigned int    len,
-		unsigned int    offset,
-		const char*     log_prefix,
-		unsigned char   n,
-		bool            blank_dtmf,
-		unsigned char*  voice_sync_data,
-		unsigned int*   voice_sync_data_len,
-		bool*           next_frame_is_fast_data,
-		unsigned int*   skip_dtmf_blanking_frames
-		);
+	unsigned char*             m_rfDataLookBack;
+	unsigned int               m_rfDataLookBackLen;
+	unsigned int               m_rfDataLookBackIndex;
+	unsigned char*             m_netDataLookBack;
+	unsigned int               m_netDataLookBackLen;
+	unsigned int               m_netDataLookBackIndex;
 
 	void writeNetwork();
+	void writeNetworkData(unsigned char* data, unsigned int length);
 
 	void writeQueueHeaderRF(const unsigned char* data);
 	void writeQueueDataRF(const unsigned char* data);
@@ -135,9 +125,19 @@ private:
 	void writeEndRF();
 	void writeEndNet();
 
-	bool openFile();
-	bool writeFile(const unsigned char* data, unsigned int length);
-	void closeFile();
+	void writeJSONRSSI();
+	void writeJSONBER();
+	void writeJSONText(const unsigned char* text);
+
+	void writeJSONRF(const char* action, const unsigned char* my1, const unsigned char* my2, const unsigned char* your);
+	void writeJSONRF(const char* action, float duration, float ber);
+	void writeJSONRF(const char* action, float duration, float ber, int minRSSI, int maxRSSI, int aveRSSI);
+	void writeJSONNet(const char* action, const unsigned char* my1, const unsigned char* my2, const unsigned char* your, const unsigned char* reflector = nullptr);
+	void writeJSONNet(const char* action, float duration, float loss);
+
+	void writeJSONRF(nlohmann::json& json, const char* action, float duration, float ber);
+
+	std::string convertBuffer(const unsigned char* buffer, unsigned int length) const;
 
 	bool insertSilence(const unsigned char* data, unsigned char seqNo);
 	void insertSilence(unsigned int count);
@@ -147,5 +147,7 @@ private:
 	void sendAck();
 	void sendError();
 };
+
+#endif
 
 #endif

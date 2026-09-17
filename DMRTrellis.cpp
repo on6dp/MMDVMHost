@@ -1,5 +1,5 @@
 /*
-*	Copyright (C) 2016 by Jonathan Naylor, G4KLX
+*	Copyright (C) 2016,2025 by Jonathan Naylor, G4KLX
 *
 *	This program is free software; you can redistribute it and/or modify
 *	it under the terms of the GNU General Public License as published by
@@ -49,8 +49,8 @@ CDMRTrellis::~CDMRTrellis()
 
 bool CDMRTrellis::decode(const unsigned char* data, unsigned char* payload)
 {
-	assert(data != NULL);
-	assert(payload != NULL);
+	assert(data != nullptr);
+	assert(payload != nullptr);
 
 	signed char dibits[98U];
 	deinterleave(data, dibits);
@@ -83,8 +83,8 @@ bool CDMRTrellis::decode(const unsigned char* data, unsigned char* payload)
 
 void CDMRTrellis::encode(const unsigned char* payload, unsigned char* data)
 {
-	assert(payload != NULL);
-	assert(data != NULL);
+	assert(payload != nullptr);
+	assert(data != nullptr);
 
 	unsigned char tribits[49U];
 	bitsToTribits(payload, tribits);
@@ -280,12 +280,12 @@ void CDMRTrellis::pointsToDibits(const unsigned char* points, signed char* dibit
 void CDMRTrellis::bitsToTribits(const unsigned char* payload, unsigned char* tribits) const
 {
 	for (unsigned int i = 0U; i < 48U; i++) {
-		unsigned int n = 143U - i * 3U;
+		unsigned int n = i * 3U;
 
 		bool b1 = READ_BIT(payload, n) != 0x00U;
-		n--;
+		n++;
 		bool b2 = READ_BIT(payload, n) != 0x00U;
-		n--;
+		n++;
 		bool b3 = READ_BIT(payload, n) != 0x00U;
 
 		unsigned char tribit = 0U;
@@ -308,12 +308,12 @@ void CDMRTrellis::tribitsToBits(const unsigned char* tribits, unsigned char* pay
 		bool b2 = (tribit & 0x02U) == 0x02U;
 		bool b3 = (tribit & 0x01U) == 0x01U;
 
-		unsigned int n = 143U - i * 3U;
+		unsigned int n = i * 3U;
 
 		WRITE_BIT(payload, n, b1);
-		n--;
+		n++;
 		WRITE_BIT(payload, n, b2);
-		n--;
+		n++;
 		WRITE_BIT(payload, n, b3);
 	}
 }

@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2017,2018,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2017,2018,2020,2021,2023,2026 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -19,40 +19,68 @@
 #if !defined(DMRNetwork_H)
 #define	DMRNetwork_H
 
+#include "UDPSocket.h"
+#include "Timer.h"
+#include "RingBuffer.h"
 #include "DMRData.h"
+#include "Defines.h"
+
+#if defined(USE_DMR)
 
 #include <string>
+#include <cstdint>
+#include <random>
 
-class IDMRNetwork
+class CDMRNetwork
 {
 public:
-	virtual ~IDMRNetwork() = 0;
+	CDMRNetwork(const std::string& gatewayAddress, unsigned short gatewayPort, const std::string& localAddress, unsigned short localPort, unsigned int id, bool duplex, bool slot1, bool slot2, bool debug);
+	~CDMRNetwork();
 
-	virtual void setOptions(const std::string& options) = 0;
+	bool open();
 
-	virtual void setConfig(const std::string& callsign, unsigned int rxFrequency, unsigned int txFrequency, unsigned int power, unsigned int colorCode, float latitude, float longitude, int height, const std::string& location, const std::string& description, const std::string& url) = 0;
+	void enable(bool enabled);
 
-	virtual bool open() = 0;
+	bool read(CDMRData& data, TrunkingCommandParameters& command);
 
-	virtual void enable(bool enabled) = 0;
+	bool write(const CDMRData& data);
 
-	virtual bool read(CDMRData& data) = 0;
+	bool writeRadioPosition(unsigned int id, const unsigned char* data);
 
-	virtual bool write(const CDMRData& data) = 0;
+	bool writeTalkerAlias(unsigned int id, unsigned char type, const unsigned char* data);
 
-	virtual bool writeRadioPosition(unsigned int id, const unsigned char* data) = 0;
+	bool wantsBeacon();
 
-	virtual bool writeTalkerAlias(unsigned int id, unsigned char type, const unsigned char* data) = 0;
+	void clock(unsigned int ms);
 
-	virtual bool wantsBeacon() = 0;
+	bool isConnected() const;
 
-	virtual void clock(unsigned int ms) = 0;
-
-	virtual bool isConnected() const = 0;
-
-	virtual void close(bool sayGoodbye) = 0;
+	void close();
 
 private: 
+	std::string      m_addressStr;
+	sockaddr_storage m_addr;
+	unsigned int     m_addrLen;
+	unsigned short   m_port;
+	uint8_t*         m_id;
+	bool             m_duplex;
+	bool             m_debug;
+	CUDPSocket       m_socket;
+	bool             m_enabled;
+	bool             m_slot1;
+	bool             m_slot2;
+	unsigned char*   m_buffer;
+	uint32_t*        m_streamId;
+	CRingBuffer<unsigned char> m_rxData;
+	bool             m_beacon;
+	std::mt19937     m_random;
+	CTimer           m_pingTimer;
+
+	bool writePing();
+
+	bool write(const unsigned char* data, unsigned int length);
 };
+
+#endif
 
 #endif

@@ -1,5 +1,5 @@
 /*
-*   Copyright (C) 2016 by Jonathan Naylor G4KLX
+*   Copyright (C) 2016,2023,2025 by Jonathan Naylor G4KLX
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
 
 #include "P25LowSpeedData.h"
 #include "P25Utils.h"
+
+#if defined(USE_P25)
 
 #include <cstdio>
 #include <cassert>
@@ -54,7 +56,7 @@ CP25LowSpeedData::~CP25LowSpeedData()
 
 void CP25LowSpeedData::process(unsigned char* data)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char lsd[4U];
 	CP25Utils::decode(data, lsd, 1546U, 1578U);
@@ -93,7 +95,7 @@ void CP25LowSpeedData::process(unsigned char* data)
 
 void CP25LowSpeedData::encode(unsigned char* data) const
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char lsd[4U];
 	lsd[0U] = m_lsd1;
@@ -128,3 +130,6 @@ unsigned char CP25LowSpeedData::encode(unsigned char in) const
 {
 	return CCS_PARITY[in];
 }
+
+#endif
+

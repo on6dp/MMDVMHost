@@ -1,6 +1,6 @@
 /*
-*   Copyright (C) 2016-2019 by Jonathan Naylor G4KLX
-*   Copyright (C) 2018 by Bryan Biedenkapp <gatekeep@gmail.com>
+*   Copyright (C) 2016-2019,2023 by Jonathan Naylor G4KLX
+*   Copyright (C) 2018 by Bryan Biedenkapp <gatekeep@gmail.com> N2PLL
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -27,17 +27,20 @@
 #include "DMRLookup.h"
 #include "P25Audio.h"
 #include "Defines.h"
-#include "Display.h"
 #include "P25Data.h"
 #include "P25NID.h"
 #include "Modem.h"
 #include "Timer.h"
 
+#if defined(USE_P25)
+
 #include <cstdio>
+
+#include <nlohmann/json.hpp>
 
 class CP25Control {
 public:
-	CP25Control(unsigned int nac, unsigned int id, bool selfOly, bool uidOverride, CP25Network* network, CDisplay* display, unsigned int timeout, bool duplex, CDMRLookup* lookup, bool remoteGateway, CRSSIInterpolator* rssiMapper);
+	CP25Control(unsigned int nac, unsigned int id, bool selfOly, bool uidOverride, CP25Network* network, unsigned int timeout, bool duplex, CDMRLookup* lookup, bool remoteGateway, bool softId, CRSSIInterpolator* rssiMapper);
 	~CP25Control();
 
 	bool writeModem(unsigned char* data, unsigned int len);
@@ -57,7 +60,6 @@ private:
 	bool                       m_uidOverride;
 	bool                       m_remoteGateway;
 	CP25Network*               m_network;
-	CDisplay*                  m_display;
 	bool                       m_duplex;
 	CDMRLookup*                m_lookup;
 	CRingBuffer<unsigned char> m_queue;
@@ -69,6 +71,7 @@ private:
 	unsigned int               m_rfFrames;
 	unsigned int               m_rfBits;
 	unsigned int               m_rfErrs;
+	// unsigned int            m_rfUndecodableLC;
 	unsigned int               m_netFrames;
 	unsigned int               m_netLost;
 	unsigned int               m_rfDataFrames;
@@ -76,9 +79,14 @@ private:
 	unsigned char              m_lastDUID;
 	CP25Audio                  m_audio;
 	CP25Data                   m_rfData;
+	// CP25Data                m_rfLastLDU1;
+	// CP25Data                m_rfLastLDU2;
 	CP25Data                   m_netData;
 	CP25LowSpeedData           m_rfLSD;
 	CP25LowSpeedData           m_netLSD;
+	bool                       m_softIdEnabled;
+	unsigned char              m_softId[12U];
+	unsigned int               m_softIdPtr;
 	unsigned char*             m_netLDU1;
 	unsigned char*             m_netLDU2;
 	unsigned char*             m_lastIMBE;
@@ -87,13 +95,16 @@ private:
 	unsigned int               m_rfPDUCount;
 	unsigned int               m_rfPDUBits;
 	CRSSIInterpolator*         m_rssiMapper;
-	unsigned char              m_rssi;
-	unsigned char              m_maxRSSI;
-	unsigned char              m_minRSSI;
-	unsigned int               m_aveRSSI;
+	int                        m_rssi;
+	int                        m_maxRSSI;
+	int                        m_minRSSI;
+	int                        m_aveRSSI;
+	unsigned int               m_rssiCountTotal;
+	int                        m_rssiAccum;
 	unsigned int               m_rssiCount;
+	unsigned int               m_bitsCount;
+	unsigned int               m_bitErrsAccum;
 	bool                       m_enabled;
-	FILE*                      m_fp;
 
 	void writeQueueRF(const unsigned char* data, unsigned int length);
 	void writeQueueNet(const unsigned char* data, unsigned int length);
@@ -108,6 +119,9 @@ private:
 
 	void insertMissingAudio(unsigned char* data);
 
+	void setSoftId(const std::string& text);
+	void addSoftId();
+
 	void createRFHeader();
 
 	void createNetHeader();
@@ -115,9 +129,21 @@ private:
 	void createNetLDU2();
 	void createNetTerminator();
 
-	bool openFile();
-	bool writeFile(const unsigned char* data, unsigned char length);
-	void closeFile();
+	void writeJSONRSSI();
+	void writeJSONBER();
+
+	void writeJSONRF(const char* action, unsigned int srcId, const std::string& srcInfo, bool grp, unsigned int dstId);
+	void writeJSONRF(const char* action, float duration, float ber);
+	void writeJSONRF(const char* action, float duration, float ber, int minRSSI, int maxRSSI, int aveRSSI);
+
+	void writeJSONNet(const char* action, unsigned int srcId, const std::string& srcInfo, bool grp, unsigned int dstId);
+	void writeJSONNet(const char* action, float duration, float loss);
+
+	void writeJSON(nlohmann::json& json, const char* action);
+	void writeJSON(nlohmann::json& json, const char* source, const char* action, unsigned int srcId, const std::string& srcInfo, bool grp, unsigned int dstId);
 };
 
 #endif
+
+#endif
+

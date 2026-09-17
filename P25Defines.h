@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2016 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2016,2025 by Jonathan Naylor G4KLX
  *   Copyright (C) 2018 by Bryan Biedenkapp <gatekeep@gmail.com>
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -55,7 +55,10 @@ const unsigned int  P25_PDU_FEC_LENGTH_BITS          = P25_PDU_FEC_LENGTH_BYTES 
 
 const unsigned int  P25_MI_LENGTH_BYTES = 9U;
 
+const unsigned char P25_ALGO_UNENCRYPT = 0x80U;
+
 const unsigned char P25_LCF_GROUP   = 0x00U;
+const unsigned char P25_LCF_GRP_VCH_GRANT = 0x02U;
 const unsigned char P25_LCF_PRIVATE = 0x03U;
 
 const unsigned char P25_LCF_TSBK_CALL_ALERT  = 0x1FU;
@@ -63,7 +66,7 @@ const unsigned char P25_LCF_TSBK_ACK_RSP_FNE = 0x20U;
 
 const unsigned int  P25_SS0_START    = 70U;
 const unsigned int  P25_SS1_START    = 71U;
-const unsigned int  P25_SS_INCREMENT = 72U;
+const unsigned int  P25_INCREMENT = 72U;
 
 const unsigned char P25_DUID_HEADER  = 0x00U;
 const unsigned char P25_DUID_TERM    = 0x03U;

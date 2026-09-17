@@ -71,6 +71,8 @@
 
 #include "BCH.h"
 
+#if defined(USE_P25)
+
 #include <cmath>
 #include <cstdio>
 #include <cassert>
@@ -123,7 +125,7 @@ void CBCH::encode(const int* data, int* bb)
 
 void CBCH::encode(unsigned char* nid)
 {
-	assert(nid != NULL);
+	assert(nid != nullptr);
 
 	int data[16];
 	for (int i = 0; i < 16; i++)
@@ -137,3 +139,6 @@ void CBCH::encode(unsigned char* nid)
 		WRITE_BIT(nid, i + 16U, b);
 	}
 }
+
+#endif
+

@@ -1,5 +1,6 @@
 /*
  *   Copyright (C) 2020 by SASANO Takayoshi JG1UAA
+ *   Copyright (C) 2023,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -17,6 +18,8 @@
  */
 #include "UserDB.h"
 #include "Log.h"
+
+#if defined(USE_DMR) || defined(USE_P25) || defined(USE_NXDN)
 
 #include <cstdio>
 #include <cstring>
@@ -39,7 +42,7 @@ bool CUserDB::lookup(unsigned int id, class CUserDBentry *entry)
 	m_mutex.lock();
 
 	try {
-		if (entry != NULL)
+		if (entry != nullptr)
 			*entry = m_table.at(id);
 		else
 			(void)m_table.at(id);
@@ -56,8 +59,10 @@ bool CUserDB::lookup(unsigned int id, class CUserDBentry *entry)
 
 bool CUserDB::load(std::string const& filename)
 {
-	FILE* fp = ::fopen(filename.c_str(), "r");
-	if (fp == NULL) {
+	LogInfo("Loading ID lookup table from %s", filename.c_str());
+
+	FILE* fp = ::fopen(filename.c_str(), "rt");
+	if (fp == nullptr) {
 		LogWarning("Cannot open ID lookup file - %s", filename.c_str());
 		return false;
 	}
@@ -69,7 +74,7 @@ bool CUserDB::load(std::string const& filename)
 
 	// set index for entries
 	char buffer[256U];
-	if (::fgets(buffer, sizeof(buffer), fp) == NULL) {
+	if (::fgets(buffer, sizeof(buffer), fp) == nullptr) {
 		LogWarning("ID lookup file has no entry - %s", filename.c_str());
 		m_mutex.unlock();
 		::fclose(fp);
@@ -84,7 +89,7 @@ bool CUserDB::load(std::string const& filename)
 		::rewind(fp);
 	}
 
-	while (::fgets(buffer, sizeof(buffer), fp) != NULL) {
+	while (::fgets(buffer, sizeof(buffer), fp) != nullptr) {
 		if (buffer[0U] != '#')
 			parse(buffer, index);
 	}
@@ -107,7 +112,7 @@ bool CUserDB::makeindex(char* buf, std::unordered_map<std::string, int>& index)
 	// Remove the old index
 	index.clear();
 
-	for (i = 0, p1 = tokenize(buf, &p2); p1 != NULL;
+	for (i = 0, p1 = tokenize(buf, &p2); p1 != nullptr;
 	     i++, p1 = tokenize(p2, &p2)) {
 
 		// create [column keyword] - [column number] table
@@ -131,7 +136,7 @@ void CUserDB::parse(char* buf, std::unordered_map<std::string, int>& index)
 	std::unordered_map<std::string, char*> ptr;
 	unsigned int id;
 
-	for (i = 0, p1 = tokenize(buf, &p2); p1 != NULL;
+	for (i = 0, p1 = tokenize(buf, &p2); p1 != nullptr;
 	     i++, p1 = tokenize(p2, &p2)) {
 
 		for (auto it = index.begin(); it != index.end(); it++) {
@@ -173,10 +178,10 @@ void CUserDB::toupper_string(char* str)
 char* CUserDB::tokenize(char* str, char** next)
 {
 	if (*str == '\0')
-		return NULL;
+		return nullptr;
 
 	char* p = ::strpbrk(str, ",\t\r\n");
-	if (p == NULL) {
+	if (p == nullptr) {
 		*next = str + ::strlen(str);
 	} else {
 		*p = '\0';
@@ -185,3 +190,6 @@ char* CUserDB::tokenize(char* str, char** next)
 
 	return str;
 }
+
+#endif
+

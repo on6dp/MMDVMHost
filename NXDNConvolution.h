@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015,2016,2018 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015,2016,2018,2021,2023 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -19,6 +19,10 @@
 #if !defined(NXDNConvolution_H)
 #define  NXDNConvolution_H
 
+#include "Defines.h"
+
+#if defined(USE_NXDN)
+
 #include <cstdint>
 
 class CNXDNConvolution {
@@ -28,7 +32,8 @@ public:
 
 	void start();
 	void decode(uint8_t s0, uint8_t s1);
-	void chainback(unsigned char* out, unsigned int nBits);
+
+	unsigned int chainback(unsigned char* out, unsigned int nBits);
 
 	void encode(const unsigned char* in, unsigned char* out, unsigned int nBits) const;
 
@@ -40,6 +45,8 @@ private:
 	uint64_t* m_decisions;
 	uint64_t* m_dp;
 };
+
+#endif
 
 #endif
 

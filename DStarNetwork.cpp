@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2009-2014,2016,2019,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2014,2016,2019,2020,2021,2023,2024,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@
 #include "Utils.h"
 #include "Log.h"
 
+#if defined(USE_DSTAR)
+
 #include <cstdio>
 #include <cassert>
 #include <cstring>
@@ -43,14 +45,15 @@ m_outSeq(0U),
 m_inId(0U),
 m_buffer(1000U, "D-Star Network"),
 m_pollTimer(1000U, 60U),
-m_linkStatus(LS_NONE),
-m_linkReflector(NULL),
+m_linkStatus(LINK_STATUS::NONE),
+m_linkReflector(nullptr),
 m_random()
 {
 	if (CUDPSocket::lookup(gatewayAddress, gatewayPort, m_addr, m_addrLen) != 0)
 		m_addrLen = 0U;
 
 	m_linkReflector = new unsigned char[DSTAR_LONG_CALLSIGN_LENGTH];
+	::memset(m_linkReflector, 0, DSTAR_LONG_CALLSIGN_LENGTH);
 
 	std::random_device rd;
 	std::mt19937 mt(rd());
@@ -78,7 +81,7 @@ bool CDStarNetwork::open()
 
 bool CDStarNetwork::writeHeader(const unsigned char* header, unsigned int length, bool busy)
 {
-	assert(header != NULL);
+	assert(header != nullptr);
 
 	unsigned char buffer[50U];
 
@@ -116,7 +119,7 @@ bool CDStarNetwork::writeHeader(const unsigned char* header, unsigned int length
 
 bool CDStarNetwork::writeData(const unsigned char* data, unsigned int length, unsigned int errors, bool end, bool busy)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	unsigned char buffer[30U];
 
@@ -154,7 +157,7 @@ bool CDStarNetwork::writeData(const unsigned char* data, unsigned int length, un
 
 bool CDStarNetwork::writePoll(const char* text)
 {
-	assert(text != NULL);
+	assert(text != nullptr);
 
 	unsigned char buffer[40U];
 
@@ -163,9 +166,9 @@ bool CDStarNetwork::writePoll(const char* text)
 	buffer[2] = 'R';
 	buffer[3] = 'P';
 
-	buffer[4] = 0x0A;				// Poll with text
+	buffer[4] = 0x0AU;				// Poll with text
 
-	unsigned int length = ::strlen(text);
+	unsigned int length = (unsigned int)::strlen(text);
 
 	// Include the nul at the end also
 	::memcpy(buffer + 5U, text, length + 1U);
@@ -225,6 +228,7 @@ void CDStarNetwork::clock(unsigned int ms)
 
 	case 0x01U:			// NETWORK_TEMPTEXT;
 	case 0x04U:			// NETWORK_STATUS1..5
+	case 0x0AU:			// POLL
 	case 0x24U:			// NETWORK_DD_DATA
 		return;
 
@@ -263,7 +267,7 @@ void CDStarNetwork::clock(unsigned int ms)
 					m_inId = 0U;
 					ctrl[1U] = TAG_EOT;
 				} else {
-					ctrl[1U] = TAG_DATA1;
+					ctrl[1U] = TAG_DATA;
 				}
 
 				ctrl[2U] = buffer[7] & 0x3FU;
@@ -283,7 +287,7 @@ void CDStarNetwork::clock(unsigned int ms)
 
 unsigned int CDStarNetwork::read(unsigned char* data, unsigned int length)
 {
-	assert(data != NULL);
+	assert(data != nullptr);
 
 	if (m_buffer.isEmpty())
 		return 0U;
@@ -299,7 +303,7 @@ unsigned int CDStarNetwork::read(unsigned char* data, unsigned int length)
 
 	switch (buffer[0U]) {
 	case TAG_HEADER:
-	case TAG_DATA1:
+	case TAG_DATA:
 	case TAG_EOT:
 		::memcpy(data, buffer, c);
 		return c;
@@ -338,9 +342,12 @@ void CDStarNetwork::enable(bool enabled)
 
 void CDStarNetwork::getStatus(LINK_STATUS& status, unsigned char* reflector)
 {
-	assert(reflector != NULL);
+	assert(reflector != nullptr);
 
 	status = m_linkStatus;
 
 	::memcpy(reflector, m_linkReflector, DSTAR_LONG_CALLSIGN_LENGTH);
 }
+
+#endif
+

@@ -1,5 +1,5 @@
 /*
- *   Copyright (C) 2015-2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2015-2021,2023,2025 by Jonathan Naylor G4KLX
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -29,20 +29,24 @@
 #include "AMBEFEC.h"
 #include "DMRSlot.h"
 #include "DMRData.h"
-#include "Display.h"
+#include "DMREMB.h"
 #include "Defines.h"
 #include "Timer.h"
 #include "Modem.h"
 #include "DMRLC.h"
 
+#if defined(USE_DMR)
+
 #include <vector>
 
-enum ACTIVITY_TYPE {
-	ACTIVITY_NONE,
-	ACTIVITY_VOICE,
-	ACTIVITY_DATA,
-	ACTIVITY_CSBK,
-	ACTIVITY_EMERG
+#include <nlohmann/json.hpp>
+
+enum class ACTIVITY_TYPE {
+	NONE,
+	VOICE,
+	DATA,
+	CSBK,
+	EMERG
 };
 
 class CDMRSlot {
@@ -62,7 +66,9 @@ public:
 
 	void enable(bool enabled);
 
-	static void init(unsigned int colorCode, bool embeddedLCOnly, bool dumpTAData, unsigned int callHang, CModem* modem, IDMRNetwork* network, CDisplay* display, bool duplex, CDMRLookup* lookup, CRSSIInterpolator* rssiMapper, unsigned int jitter, DMR_OVCM_TYPES ovcm);
+	static void init(unsigned int colorCode, bool embeddedLCOnly, bool dumpTAData, unsigned int callHang, CModem* modem, CDMRNetwork* network, bool duplex, CDMRLookup* lookup, CRSSIInterpolator* rssiMapper, unsigned int jitter, DMR_OVCM ovcm, bool protect);
+
+	void setRCCommand(unsigned int command);
 
 private:
 	unsigned int               m_slotNo;
@@ -80,6 +86,7 @@ private:
 	unsigned int               m_netEmbeddedReadN;
 	unsigned int               m_netEmbeddedWriteN;
 	unsigned char              m_netTalkerId;
+	CDMRTA                     m_netTalkerAlias;
 	CDMRLC*                    m_rfLC;
 	CDMRLC*                    m_netLC;
 	unsigned char              m_rfSeqNo;
@@ -104,13 +111,16 @@ private:
 	bool                       m_netTimeout;
 	unsigned char*             m_lastFrame;
 	bool                       m_lastFrameValid;
-	unsigned char              m_rssi;
-	unsigned char              m_maxRSSI;
-	unsigned char              m_minRSSI;
-	unsigned int               m_aveRSSI;
+	int                        m_rssi;
+	int                        m_maxRSSI;
+	int                        m_minRSSI;
+	int                        m_aveRSSI;
+	unsigned int               m_rssiCountTotal;
+	int                        m_rssiAccum;
 	unsigned int               m_rssiCount;
+	unsigned int               m_bitErrsAccum;
+	unsigned int               m_bitsCount;
 	bool                       m_enabled;
-	FILE*                      m_fp;
 
 	static unsigned int        m_colorCode;
 
@@ -118,12 +128,12 @@ private:
 	static bool                m_dumpTAData;
 
 	static CModem*             m_modem;
-	static IDMRNetwork*        m_network;
-	static CDisplay*           m_display;
+	static CDMRNetwork*        m_network;
 	static bool                m_duplex;
 	static CDMRLookup*         m_lookup;
 	static unsigned int        m_hangCount;
-	static DMR_OVCM_TYPES      m_ovcm;
+	static DMR_OVCM            m_ovcm;
+	static bool                m_protect;
 
 	static CRSSIInterpolator*  m_rssiMapper;
 
@@ -132,12 +142,13 @@ private:
 
 	static unsigned char*      m_idle;
 
-    static FLCO                m_flco1;
+	static FLCO                m_flco1;
 	static unsigned char       m_id1;
 	static ACTIVITY_TYPE       m_activity1;
 	static FLCO                m_flco2;
 	static unsigned char       m_id2;
 	static ACTIVITY_TYPE       m_activity2;
+	unsigned int               m_rcCommand;
 
 	void logGPSPosition(const unsigned char* data);
 
@@ -149,14 +160,34 @@ private:
 	void writeEndRF(bool writeEnd = false);
 	void writeEndNet(bool writeEnd = false);
 
-	bool openFile();
-	bool writeFile(const unsigned char* data);
-	void closeFile();
-
 	bool insertSilence(const unsigned char* data, unsigned char seqNo);
 	void insertSilence(unsigned int count);
 
-	static void setShortLC(unsigned int slotNo, unsigned int id, FLCO flco = FLCO_GROUP, ACTIVITY_TYPE type = ACTIVITY_NONE);
+	void createReverseChannel(unsigned char* data, CDMREMB& emb);
+
+	static void setShortLC(unsigned int slotNo, unsigned int id, FLCO flco = FLCO::GROUP, ACTIVITY_TYPE type = ACTIVITY_TYPE::NONE);
+
+	void writeJSONRSSI();
+	void writeJSONBER();
+	void writeJSONText(const unsigned char* text);
+
+	void writeJSONRF(const char* action);
+	void writeJSONRF(const char* action, unsigned int srcId, const std::string& srcInfo, bool grp, unsigned int dstId);
+	void writeJSONRF(const char* action, unsigned int srcId, const std::string& srcInfo, bool grp, unsigned int dstId, unsigned int frames);
+	void writeJSONRF(const char* action, const char* desc, unsigned int srcId, const std::string& srcInfo, bool grp, unsigned int dstId);
+	void writeJSONRF(const char* action, float duration, float ber);
+	void writeJSONRF(const char* action, float duration, float ber, int minRSSI, int maxRSSI, int aveRSSI);
+
+	void writeJSONNet(const char* action);
+	void writeJSONNet(const char* action, unsigned int srcId, const std::string& srcInfo, bool grp, unsigned int dstId);
+	void writeJSONNet(const char* action, unsigned int srcId, const std::string& srcInfo, bool grp, unsigned int dstId, unsigned int frames);
+	void writeJSONNet(const char* action, float duration, float loss, float ber);
+	void writeJSONNet(const char* action, const char* desc, unsigned int srcId, const std::string& srcInfo, bool grp, unsigned int dstId);
+
+	void writeJSON(nlohmann::json& json, const char* action);
+	void writeJSON(nlohmann::json& json, const char* source, const char* action, unsigned int srcId, const std::string& srcInfo, bool grp, unsigned int dstId);
 };
+
+#endif
 
 #endif
